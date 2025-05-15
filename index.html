@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>$FLIP Arena – The Cleanest Coin Flip on Base</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="description" content="$FLIP: The cleanest, fairest on-chain coin flip. Play. Win. Earn. All on Base.">
+  <link rel="icon" type="image/png" href="https://cryptologos.cc/logos/base-base-logo.png" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #facc15;
+      --secondary: #3b82f6;
+      --bg: #18181b;
+      --text: #fff;
+      --card: #23232b;
+      --accent: #a3e635;
+      --danger: #e11d48;
+      --shadow: 0 6px 40px 0 #0004;
+      --radius: 1.3rem;
+      --font: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --text: #222;
+      --card: #fff;
+      --shadow: 0 2px 14px 0 #bbb4;
+    }
+    html { box-sizing: border-box; font-family: var(--font); background: var(--bg); color: var(--text); }
+    body { margin: 0; padding: 0; min-height: 100vh; background: var(--bg); }
+    .wallet-bar, .trust-bar, .footer, .theme-toggle { max-width: 1100px; margin: 0 auto; }
+    .wallet-bar {
+      display: flex; justify-content: flex-end; align-items: center;
+      gap: 1.2em; font-size: 1.1em; padding: 1.4em 1.8em 0 1.8em;
+      background: transparent;
+    }
+    .connect-btn, .disconnect-btn {
+      background: var(--primary); color: #222; border: none;
+      border-radius: var(--radius); padding: 0.58em 1.5em; font-weight: 700;
+      box-shadow: var(--shadow); cursor: pointer; transition: background 0.14s;
+    }
+    .connect-btn:hover, .disconnect-btn:hover { background: var(--accent); }
+    .network-badge {
+      background: var(--secondary); color: #fff; font-size: 0.96em;
+      padding: 0.38em 1em; border-radius: 1em; margin-right: 0.7em;
+      font-weight: 600; letter-spacing: 0.02em;
+    }
+    .theme-toggle {
+      position: absolute; top: 1.3em; left: 1.6em; z-index: 10;
+      display: flex; gap: 0.5em;
+    }
+    .theme-btn {
+      background: var(--card); color: var(--text); border: none; border-radius: 50%;
+      width: 38px; height: 38px; font-size: 1.13em; cursor: pointer; box-shadow: var(--shadow);
+      outline: none; transition: background 0.14s;
+    }
+    .theme-btn[aria-pressed="true"] { background: var(--accent); color: #111; }
+    .hero {
+      display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+      gap: 2.3em; min-height: 340px; margin: 2.2em auto 1.1em auto; max-width: 1100px;
+    }
+    .hero-content {
+      flex: 1 1 360px; min-width: 340px; max-width: 540px;
+      display: flex; flex-direction: column; gap: 1.3em; align-items: flex-start;
+    }
+    .hero-content h1 {
+      font-size: 2.8em; font-weight: 900; margin: 0 0 0.23em 0;
+      letter-spacing: 0.01em; background: linear-gradient(92deg,#facc15 40%,#a3e635 85%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-content p { font-size: 1.18em; color: var(--secondary); margin: 0 0 0.1em 0; }
+    .verified {
+      background: #ecfeff; color: #22c55e; padding: 0.36em 1.1em;
+      font-weight: 700; border-radius: 1em; font-size: 1.01em;
+      display: flex; align-items: center; gap: 0.55em; margin-bottom: 0.5em;
+    }
+    .hero-svg {
+      min-width: 200px; min-height: 220px; display: flex; align-items: center; justify-content: center;
+    }
+    .flip-coin {
+      width: 170px; height: 170px; filter: drop-shadow(0 8px 26px #3b82f666);
+      transition: transform 0.6s cubic-bezier(.22,.7,.52,1.1);
+    }
+    .flipping { animation: flipspin 1.05s linear; }
+    @keyframes flipspin {
+      0% { transform: rotateY(0); }
+      70% { transform: rotateY(630deg); }
+      100% { transform: rotateY(720deg);}
+    }
+    .progress-wrap { width: 100%; max-width: 370px; }
+    .progress-bar {
+      width: 100%; height: 16px; border-radius: 9px; background: #dbeafe;
+      margin-top: 0.5em; overflow: hidden; box-shadow: 0 2px 8px #0001;
+    }
+    .progress-inner {
+      height: 100%; background: linear-gradient(90deg,#facc15,#a3e635);
+      width: 0%; border-radius: 9px; transition: width 1.3s cubic-bezier(.16,.6,.66,1);
+    }
+    .howto-bar {
+      display: flex; justify-content: center; gap: 1.4em;
+      padding: 1.1em 0 0.6em 0; font-size: 1.13em; color: #a3a3a3;
+      font-weight: 500; max-width: 1100px; margin: 0 auto;
+    }
+    .howto-step { display: flex; align-items: center; gap: 0.48em; }
+    .howto-step span {
+      background: var(--primary); color: #222; border-radius: 50%;
+      font-weight: 800; width: 1.8em; height: 1.8em; display: flex;
+      align-items: center; justify-content: center; margin-right: 0.2em;
+      font-size: 1.04em; border: 2px solid #dbeafe;
+    }
+    .main-card {
+      background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+      max-width: 640px; margin: 1.9em auto 1.2em auto; padding: 2.3em 2.6em 1.4em 2.6em;
+      display: flex; flex-direction: column; align-items: center; gap: 1.7em;
+    }
+    .stat-row {
+      display: flex; flex-wrap: wrap; gap: 2em; justify-content: center; width: 100%;
+    }
+    .stat {
+      min-width: 110px; background: #f1f5f9; color: #222;
+      border-radius: 1.2em; padding: 1em 1.3em; text-align: center; box-shadow: 0 2px 14px #dbeafe;
+      display: flex; flex-direction: column; align-items: center; gap: 0.1em;
+      cursor: pointer; outline: none;
+    }
+    .stat-label { font-size: 1.06em; font-weight: 700; margin-bottom: 0.09em; }
+    .stat-value { font-size: 1.52em; font-weight: 900; margin-bottom: 0.06em; }
+    .stat-secondary { font-size: 0.99em; color: #2563eb; font-weight: 500; }
+    .flip-btn {
+      background: linear-gradient(90deg,#facc15 20%,#a3e635 70%);
+      color: #18181b; font-size: 1.22em; font-weight: 900;
+      border: none; border-radius: 2em; padding: 1.1em 2.5em; box-shadow: var(--shadow);
+      letter-spacing: 0.04em; margin: 0.6em 0; cursor: pointer;
+      transition: filter 0.11s, box-shadow 0.14s;
+      filter: brightness(1.05);
+    }
+    .flip-btn:active { filter: brightness(0.94); }
+    .flip-btn:disabled { background: #f1f5f9; color: #aaa; cursor: not-allowed; box-shadow: none; }
+    .feedback {
+      font-size: 1.05em; color: var(--secondary); margin: 0.85em 0 0 0;
+      font-weight: 600; text-align: center;
+    }
+    .stat-history {
+      width: 100%; background: #f9fafb; color: #18181b; padding: 1.1em 1.3em;
+      border-radius: 1.1em; font-size: 1em; box-shadow: 0 1px 8px #cbd5e1;
+      margin-top: 1em; max-height: 125px; overflow-y: auto;
+    }
+    .ticker-wrap {
+      width: 100%; background: #23232b; color: #fff; font-size: 1em;
+      padding: 0.9em 0.5em 0.7em 0.5em; text-align: center; margin-top: 0.6em;
+      letter-spacing: 0.01em; box-shadow: 0 2px 12px #a3e63511;
+    }
+    .trust-bar {
+      display: flex; flex-wrap: wrap; gap: 1.4em; align-items: center;
+      justify-content: center; background: #e0f2fe; padding: 1em 0; border-radius: 0 0 2em 2em;
+      font-size: 1.13em; color: #18181b; font-weight: 600; margin-top: 1.7em;
+    }
+    .trust-bar img { height: 30px; margin-right: 0.5em; vertical-align: middle; }
+    .footer {
+      margin: 2.5em auto 1.7em auto; text-align: center; color: #6b7280;
+      font-size: 1.06em; line-height: 1.8em; max-width: 650px;
+    }
+    .footer-links { font-size: 1.11em; margin-bottom: 0.8em; }
+    .footer-links a {
+      color: #3b82f6; text-decoration: none; margin: 0 0.4em;
+      font-weight: 700; letter-spacing: 0.01em;
+    }
+    .footer-links img { height: 20px; margin-left: 0.25em; opacity: 0.7; }
+    .tooltip { position: relative; cursor: help; }
+    .tooltip-text {
+      display: none; position: absolute; left: 50%; top: 120%;
+      transform: translateX(-50%); background: #fff; color: #111;
+      padding: 0.7em 1.3em; border-radius: 1em; font-size: 1em;
+      box-shadow: 0 4px 22px #23232b33; z-index: 9; min-width: 170px; text-align: left;
+      pointer-events: none;
+    }
+    .stat:focus .tooltip-text, .stat:hover .tooltip-text { display: block; }
+    .sticky-flip {
+      display: none; position: fixed; left: 0; bottom: 0; width: 100%; padding: 0.7em 0;
+      background: linear-gradient(90deg, #23232b 60%, #facc15 110%);
+      z-index: 120; box-shadow: 0 -2px 20px #0005; letter-spacing: 0.01em;
+    }
+    @media (max-width: 900px) {
+      .sticky-flip { display: block;}
+      .main-card .flip-btn { display: none;}
+      .hero, .main-card, .trust-bar, .footer { padding-left: 1.5em; padding-right: 1.5em; }
+      .stat-row { gap: 1.1em; }
+    }
+  </style>
+</head>
+<body>
+<div class="theme-toggle">
+  <button class="theme-btn" onclick="setTheme('light')" aria-pressed="false">☀️</button>
+  <button class="theme-btn" onclick="setTheme('dark')" aria-pressed="false">🌑</button>
+</div>
+<div class="wallet-bar" id="wallet-bar" style="padding:22px 25px 0 0;">
+  <span class="network-badge">Base Mainnet</span>
+  <button class="connect-btn" id="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+</div>
+<div class="howto-bar">
+  <div class="howto-step"><span>1</span>Connect Wallet</div>
+  <div class="howto-step"><span>2</span>Flip ETH</div>
+  <div class="howto-step"><span>3</span>Win $FLIP & Climb Ranks</div>
+</div>
+<div class="hero">
+  <div class="hero-content">
+    <span class="verified" title="Open contract on BaseScan">
+      <svg width="22" height="22" fill="none"><circle cx="11" cy="11" r="11" fill="#d1fae5"/><path d="M7.7 11.7 10 14l4.1-4.1" stroke="#22c55e" stroke-width="2.3" stroke-linecap="round"/></svg>
+      Verified on <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank" style="color:#22c55e;text-decoration:underline;">BaseScan</a>
+    </span>
+    <h1>$FLIP Arena</h1>
+    <p>
+      FLIP is the world’s cleanest, fairest on-chain coin flip.<br>
+      Every game is public, every win is real, and you own the outcome.
+    </p>
+    <div class="progress-wrap" title="FLIP supply progress">
+      <div class="progress-bar">
+        <div class="progress-inner" id="progress-inner" style="width: 0%"></div>
+      </div>
+      <div style="font-size:0.98em;margin-top:0.28em;color:var(--secondary);">
+        <span id="supply-progress-txt">0 FLIP minted (0%)</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-svg">
+    <!-- Flipping coin, spins only on flip -->
+    <svg class="flip-coin" id="flip-coin" viewBox="0 0 100 100">
+      <defs>
+        <radialGradient id="gold" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#facc15"/>
+          <stop offset="80%" stop-color="#c084fc"/>
+          <stop offset="100%" stop-color="#fde68a"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="50" cy="50" rx="46" ry="46" fill="url(#gold)" stroke="#fde68a" stroke-width="5"/>
+      <text x="50" y="58" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">$</text>
+    </svg>
+  </div>
+</div>
+<div class="main-card">
+  <div class="stat-row">
+    <div class="stat" tabindex="0">
+      <span class="stat-label tooltip">Vault
+        <span class="tooltip-text">Total ETH in the rewards vault for future winners.</span>
+      </span>
+      <span class="stat-value" id="vault-balance">–</span>
+      <div class="stat-secondary">ETH Vault</div>
+    </div>
+    <div class="stat" tabindex="0">
+      <span class="stat-label tooltip">Your $FLIP
+        <span class="tooltip-text">Your FLIP token balance (auto-updates).</span>
+      </span>
+      <span class="stat-value" id="flip-balance">–</span>
+      <div class="stat-secondary">Wallet Balance</div>
+    </div>
+    <div class="stat" tabindex="0">
+      <span class="stat-label tooltip">Flips
+        <span class="tooltip-text">Total number of flips performed on-chain.</span>
+      </span>
+      <span class="stat-value" id="total-flips">–</span>
+      <div class="stat-secondary">On-chain</div>
+    </div>
+    <div class="stat" tabindex="0">
+      <span class="stat-label tooltip">Win Rate
+        <span class="tooltip-text">Your win % vs. total flips.</span>
+      </span>
+      <span class="stat-value" id="win-rate">–</span>
+      <div class="stat-secondary">Your Stats</div>
+    </div>
+  </div>
+  <button class="flip-btn" id="flip-btn" onclick="flipCoin()" disabled>Flip 0.01 ETH</button>
+  <div class="feedback" id="feedback"></div>
+  <div class="stat-history" id="history-log">
+    <b>Recent Flips:</b><br>
+    No flips yet. Be the first to flip!
+  </div>
+</div>
+<div class="ticker-wrap">
+  <span>⚡️ $FLIP contract: 
+    <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank" style="color:#facc15;">
+      0x96F6...EA56b
+    </a> | Total Supply: <span id="flip-supply">10,000,000</span> | 10% Burned per Flip | Vault, Treasury & Dev: On-Chain
+  </span>
+</div>
+<div class="trust-bar">
+  <img src="https://cryptologos.cc/logos/base-base-logo.png" alt="Base logo" />  
+  Contract open source & verified | <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank" style="color:#2563eb;text-decoration:underline;">View on BaseScan</a> | All vault and treasury actions are announced and on-chain.
+</div>
+<div class="footer">
+  <div class="footer-links">
+    <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank">Smart Contract</a>|
+    <a href="#">Whitepaper</a>|
+    <a href="#">Tokenomics</a>|
+    <a href="#">Leaderboard</a>|
+    <a href="#">FAQ</a>
+  </div>
+  <b>FLIP on Base Mainnet.</b> Built for the future.<br>
+  &copy; 2025 FLIP Project. Not investment advice.
+</div>
+<div class="sticky-flip">
+  <button class="flip-btn" onclick="flipCoin()">Flip Now</button>
+</div>
+<script>
+  // ----------- Theme Toggle -------------
+  function setTheme(theme) {
+    if (theme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.querySelectorAll('.theme-btn')[0].setAttribute('aria-pressed','true');
+      document.querySelectorAll('.theme-btn')[1].setAttribute('aria-pressed','false');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.querySelectorAll('.theme-btn')[0].setAttribute('aria-pressed','false');
+      document.querySelectorAll('.theme-btn')[1].setAttribute('aria-pressed','true');
+    }
+    localStorage.setItem('flip-theme', theme);
+  }
+  // Default to dark
+  if(localStorage.getItem('flip-theme')==='light'){setTheme('light')}else{setTheme('dark');}
+
+  // ----------- Wallet Connection (MetaMask + Base Mainnet) -----------
+  let provider, signer, userAddress;
+  let FLIP_CONTRACT = "0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b";
+  let FLIP_ABI = [ /* ...fill in your ABI here for real integration... */ ];
+  document.getElementById("connect-btn").onclick = connectWallet;
+
+  async function connectWallet() {
+    if (typeof window.ethereum === 'undefined') {
+      alert('MetaMask not found! Please install it.');
+      return;
+    }
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+    document.getElementById("wallet-bar").innerHTML = `
+      <span class="network-badge">Base Mainnet</span>
+      <span style="color:#38bdf8;font-weight:700;font-size:1.09em">${shortAddr(userAddress)}</span>
+      <button class="disconnect-btn" onclick="window.location.reload()">Disconnect</button>`;
+    document.getElementById("flip-btn").disabled = false;
+    // TODO: Fetch user FLIP stats, balances etc.
+  }
+  function shortAddr(addr) {
+    return addr.slice(0,6) + "..." + addr.slice(-4);
+  }
+
+  // ----------- Coin Flip Animation -----------
+  function flipCoin() {
+    const coin = document.getElementById("flip-coin");
+    coin.classList.add("flipping");
+    document.getElementById("feedback").textContent = "Flipping...";
+    setTimeout(() => {
+      coin.classList.remove("flipping");
+      let win = Math.random() > 0.5;
+      document.getElementById("feedback").textContent = win ? "🏆 You won 50 $FLIP!" : "😅 You lost (but get 10 $FLIP). Try again!";
+      logHistory(win);
+    }, 1100);
+  }
+  // ----------- Stats (Mock for Demo) -----------
+  let totalFlips = 0, userWins = 0;
+  function logHistory(win) {
+    totalFlips += 1;
+    if(win) userWins += 1;
+    let historyLog = document.getElementById("history-log");
+    let entry = win ? "🏆 Won 50 FLIP" : "😅 Lost (10 FLIP)";
+    let old = historyLog.innerHTML.replace("<b>Recent Flips:</b><br>","");
+    historyLog.innerHTML = "<b>Recent Flips:</b><br>" + entry + "<br>" + old;
+    document.getElementById("total-flips").textContent = totalFlips;
+    document.getElementById("win-rate").textContent = (userWins && totalFlips) ? Math.round(100*userWins/totalFlips)+"%" : "–";
+    // Animate supply
+    let minted = totalFlips * 50;
+    document.getElementById("supply-progress-txt").textContent = minted + " FLIP minted ("+Math.min(Math.round(minted/10000000*100),100)+"%)";
+    document.getElementById("progress-inner").style.width = Math.min(minted/10000000*100,100)+"%";
+  }
+
+  // ----------- Fill in more functions for real contract calls ----------
+  // TODO: fetch vault balance, user FLIP, leaderboard etc.
+</script>
+</body>
+</html>
