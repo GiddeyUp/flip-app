@@ -8,126 +8,358 @@
   <link rel="icon" type="image/png" href="https://cryptologos.cc/logos/base-base-logo.png" />
   <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
   <style>
-    /* (Same CSS as before, unchanged for brevity) */
-    :root { /* ...styles... */ }
-    /* ... (keep your existing styles here, unchanged for now) ... */
+    :root {
+      --primary: #FFDC48;
+      --primary-dark: #b19723;
+      --secondary: #3B82F6;
+      --bg: #10131a;
+      --bg-glass: rgba(28,31,45,0.85);
+      --text: #fff;
+      --card: rgba(30, 35, 44, 0.86);
+      --accent: #72f1b8;
+      --danger: #e11d48;
+      --shadow: 0 8px 40px 0 #0006;
+      --radius: 1.3rem;
+      --font: 'Inter', 'Segoe UI', Arial, sans-serif;
+      --frost: blur(16px);
+      --gold: linear-gradient(92deg, #FFD700 10%, #FFDC48 85%);
+    }
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-glass: rgba(255,255,255,0.78);
+      --text: #232323;
+      --card: #fff;
+      --shadow: 0 2px 14px 0 #bbb4;
+      --frost: blur(6px);
+      --secondary: #2563eb;
+    }
+    html, body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    body {
+      background: linear-gradient(130deg,#18191f 60%,#11264f 100%);
+      min-height: 100vh;
+    }
+    .theme-toggle {
+      position: fixed; top: 18px; left: 22px; z-index: 20;
+      display: flex; gap: 0.5em;
+      backdrop-filter: var(--frost);
+    }
+    .theme-btn {
+      background: var(--card);
+      color: var(--text);
+      border: none;
+      border-radius: 50%;
+      width: 40px; height: 40px;
+      font-size: 1.17em;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: background .16s, color .16s;
+      margin-right: 3px;
+      opacity: 0.91;
+    }
+    .theme-btn[aria-pressed="true"] { background: var(--primary); color: #222; opacity: 1; }
+    .wallet-bar {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 1.35em;
+      font-size: 1.1em;
+      padding: 2.2em 2.3em 0 2.3em;
+      background: transparent;
+    }
+    .connect-btn, .disconnect-btn {
+      background: var(--primary);
+      color: #232323;
+      border: none;
+      border-radius: var(--radius);
+      padding: 0.6em 1.6em;
+      font-weight: 800;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      font-size: 1.07em;
+      transition: background .16s, color .13s, box-shadow .17s;
+      letter-spacing: 0.01em;
+    }
+    .connect-btn:hover, .disconnect-btn:hover { background: var(--primary-dark); color: #fff; }
+    .network-badge {
+      background: var(--secondary);
+      color: #fff;
+      font-size: 1em;
+      padding: 0.44em 1.2em;
+      border-radius: 1em;
+      margin-right: 0.9em;
+      font-weight: 700;
+      box-shadow: 0 2px 10px #22d3ee22;
+    }
+    .howto-bar {
+      display: flex; justify-content: center; gap: 1.6em;
+      padding: 1.1em 0 0.6em 0; font-size: 1.16em; color: #a3a3a3;
+      font-weight: 600; max-width: 1200px; margin: 0 auto;
+    }
+    .howto-step { display: flex; align-items: center; gap: 0.48em; }
+    .howto-step span {
+      background: var(--primary); color: #222; border-radius: 50%;
+      font-weight: 800; width: 2em; height: 2em; display: flex;
+      align-items: center; justify-content: center; margin-right: 0.21em;
+      font-size: 1.07em; border: 2.2px solid #b8bdfc;
+    }
+    .hero {
+      display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+      gap: 2.6em; min-height: 340px; margin: 2.8em auto 1.3em auto; max-width: 1180px;
+    }
+    .hero-content {
+      flex: 1 1 400px; min-width: 330px; max-width: 560px;
+      display: flex; flex-direction: column; gap: 1.6em; align-items: flex-start;
+      background: var(--bg-glass); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 2.2em 2.1em 1.7em 2.1em;
+    }
+    .hero-content h1 {
+      font-size: 2.9em;
+      font-weight: 900;
+      margin: 0 0 0.16em 0;
+      letter-spacing: 0.01em;
+      background: var(--gold);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-content p { font-size: 1.18em; color: var(--secondary); margin: 0 0 0.14em 0; }
+    .verified {
+      background: #ecfeff; color: #22c55e; padding: 0.36em 1.1em;
+      font-weight: 700; border-radius: 1em; font-size: 1.01em;
+      display: flex; align-items: center; gap: 0.55em; margin-bottom: 0.5em;
+      box-shadow: 0 2px 10px #e0e7ee33;
+    }
+    .hero-svg {
+      min-width: 220px; min-height: 225px; display: flex; align-items: center; justify-content: center;
+    }
+    .flip-coin {
+      width: 180px; height: 180px; filter: drop-shadow(0 8px 36px #facc1556);
+      transition: transform 0.7s cubic-bezier(.22,.7,.52,1.1);
+    }
+    .flipping { animation: flipspin 1.15s linear; }
+    @keyframes flipspin {
+      0% { transform: rotateY(0); }
+      65% { transform: rotateY(540deg);}
+      100% { transform: rotateY(720deg);}
+    }
+    .progress-wrap { width: 100%; max-width: 370px; }
+    .progress-bar {
+      width: 100%; height: 17px; border-radius: 9px; background: #dbeafe;
+      margin-top: 0.58em; overflow: hidden; box-shadow: 0 2px 8px #0001;
+    }
+    .progress-inner {
+      height: 100%; background: linear-gradient(90deg,#FFD700,#72f1b8);
+      width: 0%; border-radius: 9px; transition: width 1.3s cubic-bezier(.16,.6,.66,1);
+    }
+    .main-card {
+      background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+      max-width: 680px; margin: 2.2em auto 1.5em auto; padding: 2.5em 2.9em 1.7em 2.9em;
+      display: flex; flex-direction: column; align-items: center; gap: 1.8em;
+      backdrop-filter: var(--frost);
+    }
+    .stat-row {
+      display: flex; flex-wrap: wrap; gap: 2.3em; justify-content: center; width: 100%;
+    }
+    .stat {
+      min-width: 120px; background: #f1f5f9; color: #222;
+      border-radius: 1.2em; padding: 1.2em 1.5em; text-align: center; box-shadow: 0 2px 14px #dbeafe;
+      display: flex; flex-direction: column; align-items: center; gap: 0.09em;
+      cursor: pointer; outline: none;
+      font-size: 1.09em;
+    }
+    .stat-label { font-size: 1.11em; font-weight: 700; margin-bottom: 0.08em; }
+    .stat-value { font-size: 1.52em; font-weight: 900; margin-bottom: 0.06em; }
+    .stat-secondary { font-size: 0.99em; color: #2563eb; font-weight: 500; }
+    .flip-btn {
+      background: var(--gold);
+      color: #18181b; font-size: 1.25em; font-weight: 900;
+      border: none; border-radius: 2em; padding: 1.17em 2.8em; box-shadow: var(--shadow);
+      letter-spacing: 0.05em; margin: 0.6em 0; cursor: pointer;
+      transition: filter 0.11s, box-shadow 0.14s;
+      filter: brightness(1.05);
+      outline: none;
+    }
+    .flip-btn:active { filter: brightness(0.92); }
+    .flip-btn:disabled { background: #f1f5f9; color: #aaa; cursor: not-allowed; box-shadow: none; }
+    .feedback {
+      font-size: 1.07em; color: var(--secondary); margin: 1em 0 0 0;
+      font-weight: 600; text-align: center;
+    }
+    .stat-history {
+      width: 100%; background: #f9fafb; color: #18181b; padding: 1.13em 1.3em;
+      border-radius: 1.1em; font-size: 1em; box-shadow: 0 1px 8px #cbd5e1;
+      margin-top: 1em; max-height: 132px; overflow-y: auto;
+    }
+    .ticker-wrap {
+      width: 100%; background: #23232b; color: #fff; font-size: 1.08em;
+      padding: 1em 0.8em 0.9em 0.8em; text-align: center; margin-top: 0.6em;
+      letter-spacing: 0.01em; box-shadow: 0 2px 12px #a3e63511;
+      border-radius: 1em;
+    }
+    .trust-bar {
+      display: flex; flex-wrap: wrap; gap: 1.4em; align-items: center;
+      justify-content: center; background: #e0f2fe; padding: 1em 0; border-radius: 0 0 2em 2em;
+      font-size: 1.16em; color: #18181b; font-weight: 600; margin-top: 1.7em;
+      box-shadow: 0 2px 18px #a3e63515;
+    }
+    .trust-bar img { height: 32px; margin-right: 0.5em; vertical-align: middle; }
+    .footer {
+      margin: 3.1em auto 2.2em auto; text-align: center; color: #6b7280;
+      font-size: 1.12em; line-height: 1.9em; max-width: 730px;
+    }
+    .footer-links { font-size: 1.14em; margin-bottom: 1em; }
+    .footer-links a {
+      color: #3b82f6; text-decoration: none; margin: 0 0.5em;
+      font-weight: 700; letter-spacing: 0.01em;
+    }
+    .footer-links img { height: 22px; margin-left: 0.26em; opacity: 0.8; }
+    .tooltip { position: relative; cursor: help; }
+    .tooltip-text {
+      display: none; position: absolute; left: 50%; top: 120%;
+      transform: translateX(-50%); background: #fff; color: #111;
+      padding: 0.7em 1.3em; border-radius: 1em; font-size: 1em;
+      box-shadow: 0 4px 22px #23232b33; z-index: 9; min-width: 170px; text-align: left;
+      pointer-events: none;
+    }
+    .stat:focus .tooltip-text, .stat:hover .tooltip-text { display: block; }
+    .sticky-flip {
+      display: none; position: fixed; left: 0; bottom: 0; width: 100%; padding: 0.9em 0;
+      background: linear-gradient(90deg, #23232b 60%, #FFD700 110%);
+      z-index: 120; box-shadow: 0 -2px 20px #0005; letter-spacing: 0.01em;
+    }
+    @media (max-width: 900px) {
+      .sticky-flip { display: block;}
+      .main-card .flip-btn { display: none;}
+      .hero, .main-card, .trust-bar, .footer { padding-left: 1.5em; padding-right: 1.5em; }
+      .stat-row { gap: 1.2em; }
+      .main-card { padding: 1.3em 0.3em 1.1em 0.3em; }
+    }
   </style>
 </head>
 <body>
-<div class="theme-toggle">
-  <button class="theme-btn" data-theme-btn="light" aria-pressed="false">☀️</button>
-  <button class="theme-btn" data-theme-btn="dark" aria-pressed="false">🌑</button>
-</div>
-<div class="wallet-bar" id="wallet-bar" style="padding:22px 25px 0 0;">
-  <span class="network-badge">Base Mainnet</span>
-  <button class="connect-btn" id="connect-btn">Connect Wallet</button>
-</div>
-<div class="howto-bar">
-  <div class="howto-step"><span>1</span>Connect Wallet</div>
-  <div class="howto-step"><span>2</span>Flip ETH</div>
-  <div class="howto-step"><span>3</span>Win $FLIP & Climb Ranks</div>
-</div>
-<div class="hero">
-  <div class="hero-content">
-    <span class="verified" title="Open contract on BaseScan">
-      <svg width="22" height="22" fill="none"><circle cx="11" cy="11" r="11" fill="#d1fae5"/><path d="M7.7 11.7 10 14l4.1-4.1" stroke="#22c55e" stroke-width="2.3" stroke-linecap="round"/></svg>
-      Verified on <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank" style="color:#22c55e;text-decoration:underline;">BaseScan</a>
+  <div class="theme-toggle">
+    <button class="theme-btn" data-theme="light" aria-pressed="false">☀️</button>
+    <button class="theme-btn" data-theme="dark" aria-pressed="false">🌑</button>
+  </div>
+  <div class="wallet-bar" id="wallet-bar">
+    <span class="network-badge">Base Mainnet</span>
+    <button class="connect-btn" id="connect-btn">Connect Wallet</button>
+  </div>
+  <div class="howto-bar">
+    <div class="howto-step"><span>1</span>Connect Wallet</div>
+    <div class="howto-step"><span>2</span>Flip ETH</div>
+    <div class="howto-step"><span>3</span>Win $FLIP & Climb Ranks</div>
+  </div>
+  <div class="hero">
+    <div class="hero-content">
+      <span class="verified" title="Open contract on BaseScan">
+        <svg width="22" height="22" fill="none"><circle cx="11" cy="11" r="11" fill="#d1fae5"/><path d="M7.7 11.7 10 14l4.1-4.1" stroke="#22c55e" stroke-width="2.3" stroke-linecap="round"/></svg>
+        Verified on <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank" style="color:#22c55e;text-decoration:underline;">BaseScan</a>
+      </span>
+      <h1>$FLIP Arena</h1>
+      <p>
+        FLIP is the world’s cleanest, fairest on-chain coin flip.<br>
+        Every game is public, every win is real, and you own the outcome.
+      </p>
+      <div class="progress-wrap" title="FLIP supply progress">
+        <div class="progress-bar">
+          <div class="progress-inner" id="progress-inner" style="width: 0%"></div>
+        </div>
+        <div style="font-size:0.98em;margin-top:0.28em;color:var(--secondary);">
+          <span id="supply-progress-txt">0 FLIP minted (0%)</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-svg">
+      <svg class="flip-coin" id="flip-coin" viewBox="0 0 100 100">
+        <defs>
+          <radialGradient id="gold" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="#FFD700"/>
+            <stop offset="85%" stop-color="#b19723"/>
+            <stop offset="100%" stop-color="#FFDC48"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="50" cy="50" rx="46" ry="46" fill="url(#gold)" stroke="#fde68a" stroke-width="5"/>
+        <text x="50" y="58" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">$</text>
+      </svg>
+    </div>
+  </div>
+  <div class="main-card">
+    <div class="stat-row">
+      <div class="stat" tabindex="0">
+        <span class="stat-label tooltip">Vault
+          <span class="tooltip-text">Total ETH in the rewards vault for future winners.</span>
+        </span>
+        <span class="stat-value" id="vault-balance">–</span>
+        <div class="stat-secondary">ETH Vault</div>
+      </div>
+      <div class="stat" tabindex="0">
+        <span class="stat-label tooltip">Your $FLIP
+          <span class="tooltip-text">Your FLIP token balance (auto-updates).</span>
+        </span>
+        <span class="stat-value" id="flip-balance">–</span>
+        <div class="stat-secondary">Wallet Balance</div>
+      </div>
+      <div class="stat" tabindex="0">
+        <span class="stat-label tooltip">Flips
+          <span class="tooltip-text">Total number of flips performed on-chain.</span>
+        </span>
+        <span class="stat-value" id="total-flips">–</span>
+        <div class="stat-secondary">On-chain</div>
+      </div>
+      <div class="stat" tabindex="0">
+        <span class="stat-label tooltip">Win Rate
+          <span class="tooltip-text">Your win % vs. total flips.</span>
+        </span>
+        <span class="stat-value" id="win-rate">–</span>
+        <div class="stat-secondary">Your Stats</div>
+      </div>
+    </div>
+    <button class="flip-btn" id="flip-btn" disabled>Flip 0.01 ETH</button>
+    <div class="feedback" id="feedback"></div>
+    <div class="stat-history" id="history-log">
+      <b>Recent Flips:</b><br>
+      No flips yet. Be the first to flip!
+    </div>
+  </div>
+  <div class="ticker-wrap">
+    <span>⚡️ $FLIP contract:
+      <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank" style="color:#facc15;">
+        0x96F6...EA56b
+      </a> | Total Supply: <span id="flip-supply">10,000,000</span> | 10% Burned per Flip | Vault, Treasury & Dev: On-Chain
     </span>
-    <h1>$FLIP Arena</h1>
-    <p>
-      FLIP is the world’s cleanest, fairest on-chain coin flip.<br>
-      Every game is public, every win is real, and you own the outcome.
-    </p>
-    <div class="progress-wrap" title="FLIP supply progress">
-      <div class="progress-bar">
-        <div class="progress-inner" id="progress-inner" style="width: 0%"></div>
-      </div>
-      <div style="font-size:0.98em;margin-top:0.28em;color:var(--secondary);">
-        <span id="supply-progress-txt">0 FLIP minted (0%)</span>
-      </div>
-    </div>
   </div>
-  <div class="hero-svg">
-    <!-- Flipping coin, spins only on flip -->
-    <svg class="flip-coin" id="flip-coin" viewBox="0 0 100 100">
-      <defs>
-        <radialGradient id="gold" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stop-color="#facc15"/>
-          <stop offset="80%" stop-color="#c084fc"/>
-          <stop offset="100%" stop-color="#fde68a"/>
-        </radialGradient>
-      </defs>
-      <ellipse cx="50" cy="50" rx="46" ry="46" fill="url(#gold)" stroke="#fde68a" stroke-width="5"/>
-      <text x="50" y="58" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">$</text>
-    </svg>
+  <div class="trust-bar">
+    <img src="https://cryptologos.cc/logos/base-base-logo.png" alt="Base logo" />
+    Contract open source & verified |
+    <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank" style="color:#2563eb;text-decoration:underline;">View on BaseScan</a>
+    | All vault and treasury actions are announced and on-chain.
   </div>
-</div>
-<div class="main-card">
-  <div class="stat-row">
-    <div class="stat" tabindex="0">
-      <span class="stat-label tooltip">Vault
-        <span class="tooltip-text">Total ETH in the rewards vault for future winners.</span>
-      </span>
-      <span class="stat-value" id="vault-balance">–</span>
-      <div class="stat-secondary">ETH Vault</div>
+  <div class="footer">
+    <div class="footer-links">
+      <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank">Smart Contract</a>|
+      <a href="#">Whitepaper</a>|
+      <a href="#">Tokenomics</a>|
+      <a href="#">Leaderboard</a>|
+      <a href="#">FAQ</a>
     </div>
-    <div class="stat" tabindex="0">
-      <span class="stat-label tooltip">Your $FLIP
-        <span class="tooltip-text">Your FLIP token balance (auto-updates).</span>
-      </span>
-      <span class="stat-value" id="flip-balance">–</span>
-      <div class="stat-secondary">Wallet Balance</div>
-    </div>
-    <div class="stat" tabindex="0">
-      <span class="stat-label tooltip">Flips
-        <span class="tooltip-text">Total number of flips performed on-chain.</span>
-      </span>
-      <span class="stat-value" id="total-flips">–</span>
-      <div class="stat-secondary">On-chain</div>
-    </div>
-    <div class="stat" tabindex="0">
-      <span class="stat-label tooltip">Win Rate
-        <span class="tooltip-text">Your win % vs. total flips.</span>
-      </span>
-      <span class="stat-value" id="win-rate">–</span>
-      <div class="stat-secondary">Your Stats</div>
-    </div>
+    <b>FLIP on Base Mainnet.</b> Built for the future.<br>
+    &copy; 2025 FLIP Project. Not investment advice.
   </div>
-  <button class="flip-btn" id="flip-btn" disabled>Flip 0.01 ETH</button>
-  <div class="feedback" id="feedback"></div>
-  <div class="stat-history" id="history-log">
-    <b>Recent Flips:</b><br>
-    No flips yet. Be the first to flip!
+  <div class="sticky-flip">
+    <button class="flip-btn" id="sticky-flip-btn">Flip Now</button>
   </div>
-</div>
-<div class="ticker-wrap">
-  <span>⚡️ $FLIP contract: 
-    <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank" style="color:#facc15;">
-      0x96F6...EA56b
-    </a> | Total Supply: <span id="flip-supply">10,000,000</span> | 10% Burned per Flip | Vault, Treasury & Dev: On-Chain
-  </span>
-</div>
-<div class="trust-bar">
-  <img src="https://cryptologos.cc/logos/base-base-logo.png" alt="Base logo" />  
-  Contract open source & verified | <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank" style="color:#2563eb;text-decoration:underline;">View on BaseScan</a> | All vault and treasury actions are announced and on-chain.
-</div>
-<div class="footer">
-  <div class="footer-links">
-    <a href="https://basescan.org/address/0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b" target="_blank">Smart Contract</a>|
-    <a href="#">Whitepaper</a>|
-    <a href="#">Tokenomics</a>|
-    <a href="#">Leaderboard</a>|
-    <a href="#">FAQ</a>
-  </div>
-  <b>FLIP on Base Mainnet.</b> Built for the future.<br>
-  &copy; 2025 FLIP Project. Not investment advice.
-</div>
-<div class="sticky-flip">
-  <button class="flip-btn" id="sticky-flip-btn">Flip Now</button>
-</div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  // -- Theme Toggle --
+  // Theme Toggle
   function setTheme(theme) {
     if (theme === 'light') {
       document.documentElement.setAttribute('data-theme', 'light');
@@ -140,20 +372,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     localStorage.setItem('flip-theme', theme);
   }
-  // Theme toggle listeners
   document.querySelectorAll('.theme-btn').forEach(btn => {
-    btn.addEventListener('click', () => setTheme(btn.getAttribute('data-theme-btn')));
+    btn.addEventListener('click', () => setTheme(btn.getAttribute('data-theme')));
   });
-  // Init theme on load
   if(localStorage.getItem('flip-theme')==='light'){setTheme('light')}else{setTheme('dark');}
 
-  // -- Wallet Connect --
+  // Wallet Connect
   let provider, signer, userAddress;
   let FLIP_CONTRACT = "0x96F65BBB4dB9450840FcbbfD91efAE50654EA56b";
-  let FLIP_ABI = [ /* TODO: Fill for real integration */ ];
+  let FLIP_ABI = []; // TODO: Add ABI for real integration
 
-  const connectBtn = document.getElementById('connect-btn');
-  if (connectBtn) connectBtn.addEventListener('click', connectWallet);
+  function shortAddr(addr) {
+    return addr.slice(0,6) + "..." + addr.slice(-4);
+  }
 
   async function connectWallet() {
     if (typeof window.ethereum === 'undefined') {
@@ -170,16 +401,15 @@ document.addEventListener('DOMContentLoaded', function () {
       <button class="disconnect-btn" id="disconnect-btn">Disconnect</button>`;
     document.getElementById("flip-btn").disabled = false;
     document.getElementById("sticky-flip-btn").disabled = false;
-    // Add disconnect button event
-    const disconnectBtn = document.getElementById('disconnect-btn');
-    if(disconnectBtn) disconnectBtn.onclick = () => window.location.reload();
+    document.getElementById('disconnect-btn').onclick = () => window.location.reload();
     // TODO: Fetch user FLIP stats, balances etc.
   }
-  function shortAddr(addr) {
-    return addr.slice(0,6) + "..." + addr.slice(-4);
+
+  if (document.getElementById("connect-btn")) {
+    document.getElementById("connect-btn").onclick = connectWallet;
   }
 
-  // -- Coin Flip Animation --
+  // Coin Flip Animation
   function flipCoin() {
     const coin = document.getElementById("flip-coin");
     coin.classList.add("flipping");
@@ -195,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById("flip-btn").onclick = flipCoin;
   document.getElementById("sticky-flip-btn").onclick = flipCoin;
 
-  // -- Stats (Mock for Demo) --
+  // Stats (Demo)
   let totalFlips = 0, userWins = 0;
   function logHistory(win) {
     totalFlips += 1;
@@ -215,4 +445,3 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 </body>
 </html>
-
